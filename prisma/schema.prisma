@@ -1,0 +1,139 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+// schema.prisma
+
+enum UserRole {
+  superadmin
+  customer
+}
+
+enum StockProduct {
+  ready
+  preorder
+}
+
+enum StatusOrder {
+  pending
+  success
+  failed
+}
+
+model Session {
+  id        String   @id
+  userId    Int
+  expiresAt DateTime
+
+  user User @relation(references: [id], fields: [userId], onDelete: Cascade)
+}
+
+model User {
+  id        Int       @id @default(autoincrement())
+  name      String
+  email     String    @unique
+  password  String
+  type      UserRole
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  Order     Order[]
+  Session   Session[]
+}
+
+model Brand {
+  id        Int       @id @default(autoincrement())
+  logo      String?
+  name      String
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  Product   Product[]
+}
+
+model Category {
+  id        Int       @id @default(autoincrement())
+  name      String
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  Product   Product[]
+}
+
+model Location {
+  id        Int       @id @default(autoincrement())
+  name      String
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  Product   Product[]
+}
+
+model Product {
+  id          Int          @id @default(autoincrement())
+  brandId     Int
+  categoryId  Int
+  locationId  Int
+  name        String
+  description String?
+  price       Int
+  stock       StockProduct
+  images      String[]
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  brand        Brand          @relation(fields: [brandId], references: [id])
+  category     Category       @relation(fields: [categoryId], references: [id])
+  location     Location       @relation(fields: [locationId], references: [id])
+  OrderProduct OrderProduct[]
+}
+
+model Order {
+  id        Int         @id @default(autoincrement())
+  code      String
+  userId    Int
+  total     Int
+  status    StatusOrder
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+
+  user         User           @relation(fields: [userId], references: [id])
+  OrderDetail  OrderDetail[]
+  OrderProduct OrderProduct[]
+}
+
+model OrderDetail {
+  id         Int      @id @default(autoincrement())
+  orderId    Int
+  name       String
+  phone      String
+  address    String?
+  city       String?
+  notes      String?
+  postalCode String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  order Order @relation(fields: [orderId], references: [id])
+}
+
+model OrderProduct {
+  id        Int      @id @default(autoincrement())
+  productId Int
+  orderId   Int
+  subtotal  Int
+  quantity  Int
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  product Product @relation(fields: [productId], references: [id])
+  order   Order   @relation(fields: [orderId], references: [id])
+}
